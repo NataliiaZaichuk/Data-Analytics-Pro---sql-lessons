@@ -1,0 +1,172 @@
+/*Завдання 1  (10 балів)
+INNER JOIN
+Завдання: Отримайте список усіх замовлень, зроблених за останні 30 днів, разом з іменами клієнтів, які їх здійснили. 
+Виведіть order_id, order_date, customer_id, first_name, last_name*/
+
+SELECT
+	orders.order_id,
+    orders.order_date,
+    orders.customer_id,
+    customers.first_name AS customer_first_name,
+    customers.last_name AS customer_last_name
+FROM
+	orders
+INNER JOIN
+	customers ON orders.customer_id=customers.customer_id
+-- немає замовлень за останні 30 днів, тому умову про ці 30 днів виношу в коментар (інакше не видає результату)
+-- WHERE orders.order_date >= DATE_SUB(CURDATE(),INTERVAL 30 DAY)
+ORDER BY orders.order_date DESC
+;
+
+/*Завдання 2 (10 балів)
+JOIN для аналізу продажів продуктів
+Завдання: Отримайте список усіх продуктів, включаючи ті, які не мають продажів. Виведіть product_id, product_name, price, sale_id, quantity, і sale_price.*/
+
+SELECT
+	products.product_name,
+    products.price,
+    sales.sale_id,
+    sales.quantity,
+    sales.sale_price
+FROM 
+	products
+LEFT JOIN
+	sales ON products.product_id = sales.product_id
+    ;
+    
+ /*Завдання 3  (10 балів)
+JOIN для отримання всіх клієнтів та замовлень
+Завдання: Отримайте повний список клієнтів та замовлень, включаючи клієнтів без замовлень та замовлення без клієнтів. 
+Виведіть customer_id, first_name, last_name, order_id, order_date.*/
+
+SELECT
+	c.customer_id,
+    c.first_name AS customer_first_name,
+    c.last_name AS customer_last_name,
+    o.order_id,
+    o.order_date
+FROM customers c
+LEFT JOIN
+	orders o ON c.customer_id = o.customer_id
+    
+UNION
+SELECT
+	c.customer_id,
+    c.first_name AS customer_first_name,
+    c.last_name AS customer_last_name,
+    o.order_id,
+    o.order_date
+FROM orders o
+RIGHT JOIN 
+	customers c ON c.customer_id = o.customer_id
+    ; 
+    
+    /*Завдання 4  (10 балів)
+UNION для зведення списку клієнтів і співробітників
+Завдання: Отримайте унікальний список осіб (ім’я та прізвище), які є або клієнтами, або співробітниками компанії, включаючи дублікати для тих, хто є і клієнтом, і співробітником.*/
+
+SELECT 
+	first_name, 
+	last_name
+FROM customers
+UNION ALL
+SELECT 
+	first_name, 
+    last_name
+FROM employees;
+
+/*Завдання 5  (10 балів)
+JOIN та умовами фільтрації
+Завдання: Знайдіть усі продукти, які не були продані в кількості більше 20 одиниць або взагалі не були продані. Виведіть product_id, product_name, quantity (якщо кількість є, інакше NULL).*/
+
+SELECT
+	products.product_id,
+    products.product_name,
+    sales.sale_id,
+    sales.quantity
+FROM 
+	products
+LEFT JOIN
+	sales ON products.product_id = sales.product_id
+    WHERE sales.quantity <= 20 OR sales.quantity IS NULL
+    ;
+    
+/*Завдання 6  (10 балів)
+JOIN та агрегатні функції
+Завдання: Підрахуйте загальну кількість проданих одиниць кожного продукту, який є у таблиці sales. Виведіть product_id, product_name, total_quantity.
+Додала сортування по спаданню*/
+
+SELECT 
+    p.product_id,
+    p.product_name,
+    SUM(s.quantity) AS total_quantity
+FROM sales s
+JOIN products p ON s.product_id = p.product_id
+GROUP BY p.product_id, p.product_name
+ORDER BY total_quantity DESC;
+
+/*Завдання 7  (10 балів)
+JOIN з використанням агрегатної функції
+Завдання: Знайдіть кількість замовлень для кожного клієнта. Виведіть customer_id, first_name, last_name, total_orders.
+GROUP BY - не забути коли використовую агрегатні функції, як COUNT(), потрібно точно вказати GROUP BY для неагрегованих полів. У цьому випадку — це c.customer_id, c.first_name, і c.last_name. */
+
+SELECT
+	c.customer_id,
+	CONCAT(c.first_name,' ',c.last_name) AS customer_full_name,
+	COUNT(o.order_id) AS total_orders
+FROM customers c
+LEFT JOIN
+	orders o ON c.customer_id = o.customer_id
+GROUP BY c.customer_id, c.first_name, c.last_name
+ORDER BY total_orders DESC
+;
+
+/*Завдання 8  (10 балів)
+Завдання: Знайдіть усіх клієнтів, які не зробили жодного замовлення за останній рік. Виведіть customer_id, first_name, last_name.*/
+
+SELECT
+    c.customer_id,
+    c.first_name,
+    c.last_name
+FROM customers c
+LEFT JOIN orders o 
+    ON c.customer_id = o.customer_id AND o.order_date >= CURDATE() - INTERVAL 1 YEAR
+WHERE o.order_id IS NULL;
+
+/*Додаткове завдання:
+Завдання 1 (10 балів): Знайдіть усі замовлення, які містять продукти, чия ціна вища за середню ціну всіх продуктів. 
+Виведіть order_id, customer_id, product_id, product_name, price
+Завдання 2 (10 балів): Знайдіть усі продукти, для яких кількість замовлених одиниць перевищує кількість доступних у запасі. 
+Виведіть product_id, product_name, stock_quantity, total_sold*/
+
+-- Додаткове завдання 1
+
+SELECT
+	o.order_id,
+	o.customer_id,
+	p.product_id,
+	p.product_name,
+	p.price,
+    (SELECT ROUND(AVG(price),2) FROM products) AS average_price
+FROM sales s
+JOIN products p ON s.product_id = p.product_id
+JOIN orders o ON s.order_id = o.order_id
+WHERE p.price >
+(SELECT AVG(price) FROM products)
+;
+
+-- Додаткове завдання 2
+SELECT 
+    p.product_id,
+    p.product_name,
+    p.stock_quantity,
+    total_sold
+FROM  products p
+JOIN 
+    (SELECT 
+         product_id, 
+         SUM(quantity) AS total_sold
+     FROM  sales
+     GROUP BY  product_id) AS sold_products
+ON p.product_id = sold_products.product_id
+WHERE sold_products.total_sold > p.stock_quantity;
