@@ -1,0 +1,158 @@
+USE learning_sql;
+/*Завдання 1
+Отримання інформації про клієнтів із певною кількістю замовлень
+Завдання: Знайдіть імена, прізвища та електронні адреси тих клієнтів, які зробили більше 3 замовлень
+
+Комент Зайчук: взяти в роботу таблиці customers + orders
+Назви колонок - customer_id, first_name, last_name, email, phone, address, city, state, zip_code, order_id, customer_id, order_date, shipping_date, status
+Взяти в запит - customer_id, first_name, last_name, email, phone, order_id, customer_id/
+--Запит для перегляду всіх робочих полів:
+SELECT *
+FROM customers c
+JOIN orders o ON c.customer_id = o.customer_id;
+
+-- робочий запит для Завдання 1
+SELECT 
+	c.customer_id,
+    c.first_name,
+    c.last_name,
+    c.email,
+    c.phone,
+    COUNT(order_id) AS orders_count
+FROM customers c
+JOIN 
+    orders o ON c.customer_id = o.customer_id
+GROUP BY c.customer_id, c.first_name, c.last_name, c.email, c.phone
+HAVING orders_count >=3 -- якщо 3 замовлення по клієнту також мають бути включені в результати
+ORDER BY orders_count DESC
+;
+
+/*Завдання 2
+ Товари з найбільшою кількістю продажів
+Завдання: Знайдіть назви товарів (10) та кількість одиниць, які були продані найбільше.
+Комент Зайчук: використати таблиці products і sales
+products:product_id, product_name, category, price, stock_quantity, supplier_id
+sales:sale_id, order_id, product_id, quantity, sale_price, employee_id
+Для кращої візуалізації вивести поля: product_id, product_name, quantity
+Відсортувати від найбільшого до найменшого і встановити LIMIT на 10 назв товарів
+*/
+-- Запит для перегляду  робочих полів:
+SELECT *
+-- FROM products;
+FROM sales;
+-- робочий запит для Завдання 2
+SELECT
+	p.product_id, 
+    p.product_name, 
+    SUM(s.quantity) AS total_sold
+FROM products p
+JOIN 
+	sales s ON p.product_id=s.product_id
+GROUP BY 
+		p.product_id, 
+		p.product_name
+ORDER BY total_sold DESC
+LIMIT 10;
+
+/*Завдання 3
+Замовлення, які не були доставлені
+Завдання: Отримайте ідентифікатори замовлень та дати замовлення для всіх замовлень, статус яких не "Shipped".
+Комент Зайчук: використати таблиці orders
+orders: order_id, customer_id, order_date, shipping_date, status
+вивести: order_id, order_date, status
+*/
+
+-- Запит для перегляду  робочих полів:
+SELECT *
+FROM orders;
+-- робочий запит для Завдання 3
+SELECT
+	order_id, 
+    order_date,
+    status
+FROM orders
+-- WHERE status NOT IN('Shipped') -- можна використати NOT IN
+-- WHERE status != 'Shipped' -- можна використати !=
+WHERE status <> 'Shipped' -- можна використати <>
+ORDER BY order_date;
+
+/*Завдання 4
+Працівники, які опрацювали найбільшу кількість замовлень
+Завдання: Знайдіть імена, прізвища та посади працівників, які були залучені до обробки найбільшої кількості замовлень.
+Комент Зайчук : використати таблиці employees та sales
+employees: employee_id, first_name, last_name, email, position, hire_date
+sales: sale_id, order_id, product_id, quantity, sale_price, employee_id
+Вивести: employee_id, first_name, last_name, position, sale_id
+*/
+
+-- Запит для перегляду  робочих полів:
+SELECT *
+-- FROM employees;
+FROM sales;
+-- робочий запит для Завдання 4
+SELECT 
+	e.employee_id, 
+    e.first_name, 
+    e.last_name, 
+    e.position, 
+    COUNT(sale_id) AS total_orders
+FROM employees e
+JOIN sales s ON e.employee_id = s.employee_id
+GROUP BY e.employee_id
+ORDER BY total_orders DESC;
+
+/*Завдання 5
+Найдорожчі товари з кожної категорії
+Завдання: Отримайте назву товару, його категорію та ціну для найдорожчих товарів у кожній категорії.
+Аналіз в межах однієї таблиці - спробувати через написання підзапиту
+І через SELF JOIN*/
+
+-- Запит для перегляду  робочих полів:
+SELECT *
+FROM products;
+
+-- робочий запит для Завдання 5
+-- Варіант 1, SELF JOIN
+SELECT 
+	p1.product_name, 
+    p1.category, 
+    p1.price
+FROM products p1
+-- порівнюємо таблицю саму до себе
+LEFT JOIN products p2 
+    ON p1.category = p2.category AND p1.price < p2.price
+    /* порівнюємо прайсові ціни в межах однієї категорії товару - і ставимо умову, що p1.price < p2.price
+	тобто ми порівнюємо всі ціни одна до одної - але якщо є найвища ціна в категорії як p1.price, 
+    то значення p2.price для неї не буде. Отже в цьому порівнянні значення p2.price буде нуль
+    Отже це ми і прописуємо в наступній умові, WHERE p2.product_id IS NULL */
+WHERE p2.product_id IS NULL;
+
+-- робочий запит для Завдання 5
+-- Варіант 2, підзапит
+SELECT
+	p.product_name, 
+    p.category, 
+    p.price
+FROM products p
+WHERE p.price =(
+	SELECT MAX(price)
+    FROM products
+    WHERE category=p.category
+    );
+    
+ /*Додаткове Завдання (не оцінюється)
+Клієнти, які віддають перевагу певній категорії товарів
+Завдання: Отримайте імена, прізвища клієнтів та їхні вподобання, у яких у полі preferred_categories є значення "Electronics".*/
+
+-- Запит для перегляду  робочих полів:
+SELECT *
+FROM customer_preferences;
+
+SELECT 
+    c.first_name,
+    c.last_name,
+    cp.preferences
+FROM customers c
+JOIN customer_preferences cp ON c.customer_id = cp.customer_id
+WHERE JSON_CONTAINS(cp.preferences, '["Electronics"]', '$.preferred_categories');   
+    
