@@ -1,6 +1,111 @@
--- Завдання 1: Робота з SELECT і ORDER BY
--- Завдання 2: Використання умов WHERE з операторами порівняння
--- Завдання 3: Використання умов BETWEEN та NOT BETWEEN
--- Завдання 4: Робота з NULL значеннями
--- Завдання 5: Використання умов WHERE та сортування ORDER BY
--- Додаткове завдання (+5 балів): Псевдоніми для спрощення читання
+/*Завдання 1: Робота з SELECT і ORDER BY
+У базі даних є таблиця products з наступними стовпцями: 
+product_id, product_name, category, price, stock_quantity.
+Завдання: Напишіть запит, який вибере назву та ціну продуктів з категорії Electronics, відсортованих за ціною у порядку спадання. 
+Виведіть лише перші 5 записів.*/
+-- Завдання 1, варіант 1
+SELECT product_name, price
+FROM products 
+WHERE category ='Electronics' 
+-- WHERE category IN ('Electronics')
+order by price DESC
+LIMIT 5;
+-- Завдання 1, варіант 2
+SELECT product_name, price
+FROM products 
+-- WHERE category ='Electronics' 
+WHERE category IN ('Electronics')
+order by price DESC
+LIMIT 5;
+
+/*Завдання 2: Використання умов WHERE з операторами порівняння
+У таблиці employees зберігаються дані про співробітників з наступними стовпцями: employee_id, first_name, last_name, position, salary, hire_date.
+Завдання: Напишіть запит, який вибере всіх співробітників із посадою "Developer" та зарплатою більше 70000. 
+Відсортуйте результати за ім’ям співробітника у порядку зростання.*/
+-- Завдання 2, варіант 1
+SELECT first_name, last_name, position, salary
+FROM employees
+WHERE position ='Developer'
+and salary >70000
+ORDER BY first_name;
+-- Завдання 2, варіант 2
+SELECT first_name, last_name, position, salary
+FROM employees
+WHERE position LIKE 'Developer' AND salary > 70000
+ORDER BY first_name;
+-- Завдання 2, варіант 3
+SELECT first_name, last_name, position, salary
+FROM employees
+WHERE position IN ('Developer') AND salary > 70000
+ORDER BY first_name;
+
+/*Завдання 3: Використання умов BETWEEN та NOT BETWEEN
+У таблиці orders є дані про замовлення з наступними стовпцями: order_id, customer_id, order_date, shipping_date, total_amount.
+Завдання: Напишіть запит, який вибере всі замовлення з датою замовлення між 2023-01-01 та 2023-12-31, при цьому сума замовлення не повинна бути у діапазоні від 100 до 500.*/
+
+-- Завдання 3, варіант 1
+SELECT order_id, customer_id, order_date, total_amount
+FROM orders
+WHERE order_date BETWEEN '2023-01-01' AND '2023-12-31'
+AND total_amount NOT BETWEEN 100 AND 500
+ORDER BY order_date;
+
+-- Завдання 3, варіант 2
+SELECT order_id, customer_id, order_date, total_amount
+FROM orders
+WHERE order_date >= '2023-01-01' AND order_date <= '2023-12-31' 
+AND (total_amount < 100 OR total_amount > 500)
+ORDER BY order_date;
+
+/*Завдання 4: Робота з NULL значеннями
+У таблиці customers містяться дані про клієнтів, включаючи стовпці customer_id, first_name, last_name, email, phone, address.
+Завдання: Напишіть запит, який вибере всіх клієнтів, у яких не вказані ні email, ні номер телефону. Відсортуйте результати за прізвищем в алфавітному порядку.
+*/
+
+-- Завдання 4, варіант 1
+SELECT customer_id, first_name, last_name, email, phone, address
+FROM customers
+WHERE email IS NULL 
+AND phone IS NULL
+ORDER BY last_name;
+-- Завдання 4, варіант 2
+SELECT customer_id, first_name, last_name, email, phone
+FROM customers
+WHERE (email IS NULL OR phone IS NULL)
+ORDER BY last_name;
+
+/* У всіх користувачів заповнені значення про телефон та email. 
+ Отже, щоб перевірити запит додати користувача, 
+у якого це значення (про телефон та email) не буде заповненим*/
+SELECT*
+FROM customers;
+
+INSERT INTO customers (first_name, last_name, address, city, state, zip_code)
+VALUES
+('Billie', 'Eilish',  '404 Elm St', 'Boston', 'MA', '02108');
+
+/*Завдання 5: Використання умов WHERE та сортування ORDER BY
+У таблиці orders зберігаються дані про замовлення зі стовпцями: order_id, customer_id, order_date, shipping_date, total_amount.
+Завдання: Напишіть запит, який вибере всі замовлення, зроблені після 1 січня 2023 року, і відсортує їх за датою замовлення у порядку зростання.
+*/
+-- Завдання 5, варіант 1
+SELECT order_id, customer_id, order_date, shipping_date, total_amount
+FROM orders
+WHERE order_date >='2023-01-01'
+ORDER BY order_date ASC;
+
+-- Завдання 5, варіант 2
+SELECT order_id, customer_id, order_date, shipping_date, total_amount
+FROM orders
+WHERE order_date BETWEEN '2023-01-01' AND '2025-02-27'
+ORDER BY order_date ASC;
+
+/*Додаткове завдання (+5 балів): Псевдоніми для спрощення читання
+У таблиці employees містяться дані про співробітників зі стовпцями: employee_id, first_name, last_name, position, department, salary, hire_date.
+Завдання: Напишіть запит, який об’єднає ім'я та прізвище співробітника в один стовпець з псевдонімом full_name та покаже назву відділу, в якому він працює. 
+Відсортуйте результат за full_name в алфавітному порядку.
+Підказка: Використайте CONCAT для об’єднання імені та прізвища співробітника і призначте результату псевдонім full_name.*/
+
+SELECT CONCAT (first_name, ' ', last_name) AS full_name, department
+FROM employees
+ORDER BY department ASC;
