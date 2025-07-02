@@ -1,0 +1,153 @@
+# Підрахувати загальну суму продажів, здійснених кожним співробітником, і вивести результат із його ідентифікатором.
+
+SELECT employee_id, SUM(sale_amount) AS total_sales
+FROM sales
+GROUP BY employee_id;
+
+# Порахувати середню суму продажів, здійснених кожним співробітником.
+SELECT employee_id, AVG(sale_amount) AS average_sales
+FROM sales
+GROUP BY employee_id;
+
+# Знайти мінімальну суму продажів, здійснену кожним співробітником.
+SELECT employee_id, MIN(sale_amount) AS minimum_sales
+FROM sales
+GROUP BY employee_id;
+
+
+# Знайти максимальну суму продажів, здійснену кожним співробітником.
+SELECT employee_id, MAX(sale_amount) AS maximum_sales
+FROM sales
+GROUP BY employee_id;
+
+# Вивести середню суму продажів для кожного співробітника, округлену до двох знаків після коми.
+SELECT employee_id, ROUND(AVG(sale_amount), 2) AS average_sales_rounded
+FROM sales
+GROUP BY employee_id;
+
+
+# Вивести абсолютне значення відхилення суми продажів кожного співробітника від цільового показника 5000.
+SELECT employee_id, SUM(sale_amount) sale_amount, ABS(SUM(sale_amount) - 5000) AS sales_deviation
+FROM sales
+GROUP BY employee_id;
+
+# Вивести середню суму продажів для кожного співробітника, округлену вниз до найближчого цілого числа.
+SELECT employee_id, FLOOR(AVG(sale_amount)) AS average_sales_rounded_down, CEIL(AVG(sale_amount)) AS average_sales_rounded_up
+FROM sales
+GROUP BY employee_id;
+
+# Вивести середню суму продажів для кожного співробітника, округлену вгору до найближчого цілого числа.
+SELECT employee_id, CEIL(AVG(sale_amount)) AS average_sales_rounded_up
+FROM sales
+GROUP BY employee_id;
+
+# Вибрати більш пізню з двох дат — дату замовлення або дату відправки — для кожного замовлення, щоб визначити фактичну дату виконання.
+SELECT order_id, GREATEST(order_date, shipping_date) AS latest_date
+FROM orders;
+
+#  Для кожного замовлення визначити більш ранню дату — дату замовлення або дату відправки, щоб встановити дату початку обробки замовлення.
+SELECT order_id, LEAST(order_date, shipping_date) AS earliest_date
+FROM orders;
+
+SELECT order_id, LEAST(order_date, COALESCE(shipping_date, order_date)) AS earliest_date
+FROM orders;
+
+# Вивести імена та прізвища клієнтів у нижньому регістрі.
+SELECT LOWER(first_name) AS first_name_lower, LOWER(last_name) AS last_name_lower
+FROM customers;
+
+# Вивести імена та прізвища клієнтів у верхньому регістрі.
+SELECT UPPER(first_name) AS first_name_upper, UPPER(last_name) AS last_name_upper
+FROM customers;
+
+# Вивести перші три літери імені кожного клієнта.
+SELECT LEFT(first_name, 3) AS first_name_short
+FROM customers;
+
+# Вивести останні чотири цифри телефонного номера кожного клієнта.
+SELECT RIGHT(phone, 4) AS phone_last_digits
+FROM customers;
+
+# Об'єднати ім'я та прізвище кожного клієнта в один рядок із пробілом між ними.
+SELECT CONCAT(first_name, ' ', last_name) AS full_name
+FROM customers;
+
+# Вивести довжину імені кожного клієнта.
+SELECT first_name, LENGTH(first_name) AS name_length
+FROM customers;
+
+# Знайти всіх клієнтів, чиї електронні адреси закінчуються на @gmail.com.
+SELECT first_name, last_name, email
+FROM customers
+WHERE email REGEXP '@gmail\\.com$';
+
+# Знайти всіх клієнтів, у яких номер телефону містить послідовність цифр 123.
+SELECT first_name, last_name, phone
+FROM customers
+WHERE phone REGEXP '123';
+
+# Обчислити кількість днів між датою замовлення та датою доставки для кожного замовлення.
+SELECT order_id, order_date, shipping_date, 
+DATEDIFF(shipping_date, order_date) AS days_to_ship
+FROM orders;
+
+# Знайти всі замовлення, зроблені протягом останніх 30 днів.
+SELECT order_id, order_date
+FROM orders
+WHERE order_date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY);
+
+# Визначити передбачувану дату доставки, яка настає через 7 днів після дати замовлення.
+SELECT order_id, order_date, DATE_ADD(order_date, INTERVAL 7 DAY) AS expected_delivery_date
+FROM orders;
+
+# Витягти день із дати замовлення:
+SELECT order_id, order_date, EXTRACT(DAY FROM order_date) AS order_day, EXTRACT(MONTH FROM order_date) AS order_month, EXTRACT(YEAR FROM order_date) AS order_year
+FROM orders;
+
+# Вивести всі замовлення, зроблені в 2023
+SELECT order_id, order_date
+FROM orders
+WHERE EXTRACT(YEAR FROM order_date) = 2023;
+
+# Вивести дату замовлення у форматі "день-місяць-рік", наприклад, 15-06-2023.
+SELECT order_id, order_date, DATE_FORMAT(order_date, '%d-%m-%Y') AS formatted_order_date
+FROM orders;
+
+SELECT order_id, DATE_FORMAT(order_date, '%M %d, %Y') AS formatted_order_date
+FROM orders;
+
+# Вивести номер телефону кожного клієнта, а якщо номер відсутній (NULL), відобразити текст Номер не вказаний.
+SELECT first_name, last_name, COALESCE(phone, 'Номер не вказаний') AS contact_phone
+FROM customers;
+
+# Замінити відсутню адресу на текст "Адреса не вказана":
+SELECT first_name, last_name, COALESCE(address, 'Адреса не вказана') AS customer_address
+FROM customers;
+
+
+SELECT first_name, last_name, 
+       COALESCE(NULLIF(phone, ''), 'Номер не вказаний') AS contact_phone
+FROM customers;
+
+
+SELECT customer_id, first_name, last_name,
+       NULLIF(email, '') AS actual_email
+FROM customers;
+
+
+SELECT customer_id, first_name, last_name,
+       CASE 
+           WHEN phone IS NULL OR phone = '' THEN 'Не вказаний'
+           ELSE 'Вказаний'
+       END AS phone_status
+FROM customers;
+
+
+# У таблиці orders призначити кожному замовленню категорію залежно від суми (total_amount): «Великий», «Середній», або «Малий».
+SELECT order_id, total_amount,
+       CASE 
+           WHEN total_amount >= 1000 THEN 'Великий'
+           WHEN total_amount BETWEEN 500 AND 999 THEN 'Середній'
+           ELSE 'Малий'
+       END AS order_category
+FROM orders;
