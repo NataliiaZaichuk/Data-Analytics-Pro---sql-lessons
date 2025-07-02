@@ -22,43 +22,71 @@ ORDER BY orders.order_date DESC
 JOIN для аналізу продажів продуктів
 Завдання: Отримайте список усіх продуктів, включаючи ті, які не мають продажів. Виведіть product_id, product_name, price, sale_id, quantity, і sale_price.*/
 
-SELECT
-	products.product_name,
-    products.price,
-    sales.sale_id,
-    sales.quantity,
-    sales.sale_price
-FROM 
-	products
-LEFT JOIN
-	sales ON products.product_id = sales.product_id
-    ;
-    
- /*Завдання 3  (10 балів)
+SELECT 
+
+    p.product_id,
+
+    p.product_name,
+
+    p.stock_quantity,
+
+    COALESCE(SUM(s.quantity), 0) AS total_sold
+
+FROM products p
+
+LEFT JOIN sales s ON p.product_id = s.product_id
+
+GROUP BY p.product_id, p.product_name, p.stock_quantity
+
+HAVING total_sold > p.stock_quantity;
+
+ / *Завдання 3  (10 балів)
+
 JOIN для отримання всіх клієнтів та замовлень
+
 Завдання: Отримайте повний список клієнтів та замовлень, включаючи клієнтів без замовлень та замовлення без клієнтів. 
-Виведіть customer_id, first_name, last_name, order_id, order_date.*/
+
+Виведіть customer_id, first_name, last_name, order_id, order_date.  
+ SELECT
+
+	c.customer_id,
+
+    c.first_name AS customer_first_name,
+
+    c.last_name AS customer_last_name,
+
+    o.order_id,
+
+    o.order_date
+
+FROM customers c
+
+LEFT JOIN
+
+	orders o ON c.customer_id = o.customer_id
+
+-- UNION    
+
+UNION ALL
 
 SELECT
+
 	c.customer_id,
+
     c.first_name AS customer_first_name,
+
     c.last_name AS customer_last_name,
+
     o.order_id,
+
     o.order_date
-FROM customers c
-LEFT JOIN
-	orders o ON c.customer_id = o.customer_id
-    
-UNION
-SELECT
-	c.customer_id,
-    c.first_name AS customer_first_name,
-    c.last_name AS customer_last_name,
-    o.order_id,
-    o.order_date
+
 FROM orders o
+
 RIGHT JOIN 
+
 	customers c ON c.customer_id = o.customer_id
+
     ; 
     
     /*Завдання 4  (10 балів)
@@ -80,16 +108,28 @@ JOIN та умовами фільтрації
 Завдання: Знайдіть усі продукти, які не були продані в кількості більше 20 одиниць або взагалі не були продані. Виведіть product_id, product_name, quantity (якщо кількість є, інакше NULL).*/
 
 SELECT
+
 	products.product_id,
+
     products.product_name,
+
     sales.sale_id,
+
     sales.quantity
+
 FROM 
+
 	products
+
 LEFT JOIN
+
 	sales ON products.product_id = sales.product_id
-    WHERE sales.quantity <= 20 OR sales.quantity IS NULL
-    ;
+
+   -- цей рядок рекомендовано замінити на WHERE COALESCE(sales.quantity, 0) <= 20;
+
+   --  WHERE sales.quantity <= 20 OR sales.quantity IS NULL 
+
+WHERE COALESCE(sales.quantity, 0) <= 20;
     
 /*Завдання 6  (10 балів)
 JOIN та агрегатні функції
