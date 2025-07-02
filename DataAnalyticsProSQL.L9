@@ -1,0 +1,133 @@
+USE learning_sql;
+/*Завдання 1: Обчислення загальних продажів кожного співробітника та відсоткового рангу
+Завдання: Напишіть запит, який обчислює загальні продажі для кожного співробітника, 
+а також відсотковий ранг кожного співробітника на основі їхніх продажів. 
+Ранжування повинно бути виконане по total_sales в порядку зростання.
+sales: sale_id, order_id, product_id, quantity, sale_price, employee_id
+employees: employee_id, first_name, last_name, email, position, hire_date */
+
+SELECT* FROM sales;
+SELECT* FROM employees;
+
+WITH sales_per_employees AS(
+SELECT 
+	e.employee_id
+    ,e.first_name
+    ,e.last_name
+    ,SUM(s.sale_price*s.quantity) AS total_sales
+FROM 
+	employees e
+JOIN
+	sales s ON e.employee_id = s.employee_id
+GROUP BY e.employee_id, e.first_name,e.last_name
+)
+SELECT
+	employee_id
+    ,first_name
+    ,last_name
+    ,total_sales
+    ,ROUND(PERCENT_RANK() OVER(ORDER BY total_sales ASC),3) AS sales_percent_rank  -- округлення для зручності читання 
+FROM sales_per_employees;
+
+/*Завдання 2: Розподіл продажів по квартелях
+Завдання: Використовуючи функцію NTILE(4), розподіліть співробітників за їхніми загальними продажами на 4 квартелі (четверті частини). 
+Виведіть employee_id, total_sales, а також номер квартеля, в який потрапив кожен співробітник.
+sales: sale_id, order_id, product_id, quantity, sale_price, employee_id
+employees: employee_id, first_name, last_name, email, position, hire_date
+Можна використати CTE з завдання №1, де обчислено total_sales по кожному співробітнику*/
+
+WITH sales_per_employees AS(
+SELECT 
+	e.employee_id
+    ,e.first_name
+    ,e.last_name
+    ,SUM(s.sale_price*s.quantity) AS total_sales
+FROM 
+	employees e
+JOIN
+	sales s ON e.employee_id = s.employee_id
+GROUP BY e.employee_id, e.first_name,e.last_name
+)
+SELECT
+	employee_id
+    ,first_name
+    ,last_name
+    ,total_sales
+    ,NTILE(4) OVER(ORDER BY total_sales DESC) AS sales_quartile -- дані треба відсортувати по зростанню чи спаданню. Відсортуємо по спаданню, щоб побачити в верхніх квартилях найбільші продажі) 
+FROM sales_per_employees
+ORDER BY total_sales DESC;
+
+/*Завдання 3: Обчислення кумулятивної суми продажів
+Завдання: Напишіть SQL-запит, який для кожного співробітника обчислює кумулятивну суму його продажів. 
+Кумулятивна сума повинна бути обчислена в порядку зростання sale_price.
+sales: sale_id, order_id, product_id, quantity, sale_price, employee_id
+employees: employee_id, first_name, last_name, email, position, hire_date
+ 1. Створимо CTE, щоб розрахувати продажі по кожному співробітнику (в розрізі кожного sale_id) */
+
+WITH employee_sales AS (
+    SELECT
+        e.employee_id
+        ,e.first_name
+        ,e.last_name
+        ,s.sale_id
+        ,s.sale_price * s.quantity AS total_sale_price
+    FROM
+        employees e
+    JOIN
+        sales s ON e.employee_id = s.employee_id
+)
+SELECT
+    employee_id
+    ,first_name
+    ,last_name
+    ,sale_id
+    ,total_sale_price
+    ,SUM(total_sale_price) OVER (PARTITION BY employee_id ORDER BY total_sale_price ASC) AS cumulative_sales
+FROM 
+    employee_sales
+ORDER BY 
+    employee_id, total_sale_price ASC;
+
+
+/*Завдання 4: Визначення середнього продажу по співробітниках
+Завдання: Напишіть SQL-запит, який для кожного співробітника обчислює середнє значення його продажів. 
+Результати повинні бути згруповані по employee_id.
+sales: sale_id, order_id, product_id, quantity, sale_price, employee_id
+employees: employee_id, first_name, last_name, email, position, hire_date
+*/
+    SELECT
+        e.employee_id
+        ,e.first_name
+        ,e.last_name
+        ,s.sale_id
+        ,s.sale_price * s.quantity AS total_sale_price
+        ,AVG(s.sale_price * s.quantity) OVER (PARTITION BY e.employee_id) AS average_sales_per_employee 
+    FROM
+        employees e
+    JOIN
+        sales s ON e.employee_id = s.employee_id
+	ORDER BY e.employee_id, s.sale_id;
+    
+/*Завдання 5: Порівняння продажів з попереднім значенням
+Завдання: Напишіть SQL-запит, який для кожного співробітника обчислює різницю між його поточним продажем та попереднім (на основі sale_price). 
+Для цього використовуйте функцію LAG().
+sales: sale_id, order_id, product_id, quantity, sale_price, employee_id
+employees: employee_id, first_name, last_name, email, position, hire_date
+*/
+SELECT
+        e.employee_id
+        ,e.first_name
+        ,e.last_name
+        ,s.sale_id
+        ,s.sale_price*s.quantity AS total_sale_price
+        ,LAG(s.sale_price * s.quantity) OVER (PARTITION BY e.employee_id ORDER BY s.sale_price) AS previous_total_sale_price
+        ,(s.sale_price * s.quantity) - LAG(s.sale_price * s.quantity) OVER (PARTITION BY e.employee_id ORDER BY s.sale_price) AS sale_difference
+FROM
+        employees e
+JOIN
+        sales s ON e.employee_id = s.employee_id
+ORDER BY 
+    e.employee_id, s.sale_price;
+
+
+
